@@ -35,6 +35,10 @@ def fetch_url(url, parameters=None, additional_headers=None, session=None):
         return None
     return webpage_data
 
+
+def fetch_afisha_page():
+    return fetch_url('https://www.afisha.ru/msk/schedule_cinema/')
+
 # VALIDATING FUCTIONS
 
 
