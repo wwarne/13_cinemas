@@ -66,6 +66,9 @@ def fetch_suggest_kinopoisk(movie_name, http_session=None):
                      session=http_session)
 
 
+def fetch_movie_ranks(movie_id, http_session=None):
+    return fetch_url('http://www.kinopoisk.ru/rating/{}.xml'.format(movie_id), session=http_session)
+
 # VALIDATING FUCTIONS
 
 
