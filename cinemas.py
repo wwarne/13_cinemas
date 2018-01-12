@@ -39,6 +39,33 @@ def fetch_url(url, parameters=None, additional_headers=None, session=None):
 def fetch_afisha_page():
     return fetch_url('https://www.afisha.ru/msk/schedule_cinema/')
 
+
+def fetch_kinopoisk(movie_name, http_session=None):
+    ajax_headers = {
+        'Content-type': 'application/json',
+        'Accept': 'application/json',
+    }
+    request_params = {
+        'q': movie_name,
+        'topsuggest': 'true',
+        'ajax': 1
+    }
+    return fetch_url('https://www.kinopoisk.ru/search/suggest/',
+                     additional_headers=ajax_headers,
+                     parameters=request_params,
+                     session=http_session)
+
+
+def fetch_suggest_kinopoisk(movie_name, http_session=None):
+    request_params = {
+        'srv': 'kinopoisk',
+        'part': movie_name
+    }
+    return fetch_url('https://suggest-kinopoisk.yandex.net/suggest-kinopoisk',
+                     parameters=request_params,
+                     session=http_session)
+
+
 # VALIDATING FUCTIONS
 
 
