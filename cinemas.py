@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 
 # FETCHING FUCTIONS
 def prepare_session():
@@ -76,7 +77,32 @@ def each_elem_has_keys(bunch_elements, keys_to_check):
             return False
     return True
 
+
 # PARCING FUCTIONS
+def process_afisha_page(response_object):
+    try:
+        soup = BeautifulSoup(response_object.content.decode('utf-8'), 'lxml')
+        movies = soup.find('div', id='schedule').find_all('div', class_='object')
+    except AttributeError:
+        # TODO add logging here
+        return
+    movies_info = []
+    for movie in movies:
+        try:
+            rus_name = movie.find('h3').text
+            cinemas_num = len(movie.find('table').find_all('tr'))
+        except AttributeError:
+            # Maybe html code has been changed
+            # TODO add logging here
+            continue
+        else:
+            movies_info.append(
+                {
+                    'rus_name': rus_name,
+                    'cinemas_num': cinemas_num
+                }
+            )
+    return movies_info
 
 
 if __name__ == '__main__':
