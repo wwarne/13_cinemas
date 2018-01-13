@@ -1,6 +1,5 @@
 import requests
 
-
 # FETCHING FUCTIONS
 def prepare_session():
     """
@@ -69,10 +68,16 @@ def fetch_suggest_kinopoisk(movie_name, http_session=None):
 def fetch_movie_ranks(movie_id, http_session=None):
     return fetch_url('http://www.kinopoisk.ru/rating/{}.xml'.format(movie_id), session=http_session)
 
-# VALIDATING FUCTIONS
 
+# VALIDATING FUCTIONS
+def each_elem_has_keys(bunch_elements, keys_to_check):
+    for element in bunch_elements:
+        if not all(key in element for key in keys_to_check):
+            return False
+    return True
 
 # PARCING FUCTIONS
+
 
 if __name__ == '__main__':
     pass
