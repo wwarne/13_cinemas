@@ -6,22 +6,17 @@ from lxml import etree
 from prettytable import PrettyTable
 
 
-def prepare_session():
+def fetch_url(url, parameters=None, additional_headers=None):
     typical_headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/59.0.3071.115 Safari/537.36',
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4'
     }
-    http_session = requests.Session()
-    http_session.headers.update(typical_headers)
-    return http_session
-
-
-def fetch_url(url, parameters=None, additional_headers=None, session=None):
-    session = session or prepare_session()
+    if additional_headers:
+        typical_headers.update(additional_headers)
     try:
-        webpage_data = session.get(url, params=parameters, headers=additional_headers, timeout=20)
+        webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
         return None
@@ -32,7 +27,7 @@ def fetch_afisha_page():
     return fetch_url('https://www.afisha.ru/msk/schedule_cinema/')
 
 
-def fetch_kinopoisk(movie_name, http_session=None):
+def fetch_kinopoisk(movie_name):
     ajax_headers = {
         'Content-type': 'application/json',
         'Accept': 'application/json',
@@ -44,22 +39,20 @@ def fetch_kinopoisk(movie_name, http_session=None):
     }
     return fetch_url('https://www.kinopoisk.ru/search/suggest/',
                      additional_headers=ajax_headers,
-                     parameters=request_params,
-                     session=http_session)
+                     parameters=request_params)
 
 
-def fetch_suggest_kinopoisk(movie_name, http_session=None):
+def fetch_suggest_kinopoisk(movie_name):
     request_params = {
         'srv': 'kinopoisk',
         'part': movie_name
     }
     return fetch_url('https://suggest-kinopoisk.yandex.net/suggest-kinopoisk',
-                     parameters=request_params,
-                     session=http_session)
+                     parameters=request_params)
 
 
-def fetch_movie_ranks(movie_id, http_session=None):
-    return fetch_url('http://www.kinopoisk.ru/rating/{}.xml'.format(movie_id), session=http_session)
+def fetch_movie_ranks(movie_id, ):
+    return fetch_url('http://www.kinopoisk.ru/rating/{}.xml'.format(movie_id))
 
 
 # VALIDATING FUCTIONS
@@ -184,15 +177,15 @@ def print_movies(movies_data, num_to_print=10):
 
 
 def search_movie_info(one_movie):
-    movie_page = fetch_kinopoisk(movie_name=one_movie['rus_name'], http_session=kp_session)
+    movie_page = fetch_kinopoisk(movie_name=one_movie['rus_name'])
     movie_data = process_kinopoisk_page(movie_page)
     if not movie_data:
-        movie_page = fetch_suggest_kinopoisk(movie_name=one_movie['rus_name'], http_session=kp_suggest_session)
+        movie_page = fetch_suggest_kinopoisk(movie_name=one_movie['rus_name'])
         movie_data = process_suggest_kinopoisk(movie_page)
     if not movie_data:
         # We failed to get data from both kinopoisk websites.
         return []
-    movie_rank_page = fetch_movie_ranks(movie_id=movie_data['id'], http_session=kp_ranks_session)
+    movie_rank_page = fetch_movie_ranks(movie_id=movie_data['id'])
     movie_ranks = process_movie_ranks(movie_rank_page)
     one_movie.update(movie_data)
     one_movie.update(movie_ranks)
@@ -200,9 +193,6 @@ def search_movie_info(one_movie):
 
 
 if __name__ == '__main__':
-    kp_session = prepare_session()
-    kp_suggest_session = prepare_session()
-    kp_ranks_session = prepare_session()
     print('Fetching a webpage from Afisha.ru')
     afisha_page = fetch_afisha_page() or sys.exit('Website Afisha.ru not found')
     movies_from_afisha = process_afisha_page(afisha_page) or sys.exit('Probably Afisha\'s layout has been changed.')
