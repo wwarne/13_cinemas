@@ -24,7 +24,7 @@ def fetch_url(url, parameters=None, additional_headers=None):
         webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
-        movie_log.error('Can\'t load {}'.format(webpage_data.url))
+        movie_log.error('Can\'t load {}Parameters are: {}'.format(url, parameters))
         return None
     return webpage_data
 
@@ -95,7 +95,7 @@ def process_afisha_page(response_object):
 def process_kinopoisk_page(response_object):
     try:
         info = response_object.json(encoding='utf-8')
-    except ValueError:
+    except (ValueError, AttributeError):
         return None
     if not isinstance(info, list):
         return None
@@ -142,6 +142,8 @@ def extract_from_suggest_kp(films_data):
 
 
 def process_suggest_kinopoisk(response_object):
+    if not response_object:
+        return
     try:
         info = response_object.json(encoding='utf-8')
         search_result = list(map(json.loads, info[2]))
@@ -157,6 +159,8 @@ def process_suggest_kinopoisk(response_object):
 
 
 def process_movie_ranks(response_object):
+    if not response_object:
+        return {}
     ranks_data = etree.fromstring(response_object.content)
     kp_rating = ranks_data.find('kp_rating')
     imdb_rating = ranks_data.find('imdb_rating')
@@ -171,6 +175,10 @@ def process_movie_ranks(response_object):
 
 
 def print_movies(movies_data, num_to_print=10):
+    movies_data = list(filter(None, movies_data))
+    if not movies_data:
+        print('Nothing to print')
+        return
     x = PrettyTable()
     x.field_names = ['Rank', 'Name', 'Cinemas']
     x.align['Name'] = 'l'
