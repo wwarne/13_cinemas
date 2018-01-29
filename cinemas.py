@@ -24,7 +24,7 @@ def fetch_url(url, parameters=None, additional_headers=None):
         webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
-        movie_log.error('Can\'t load {}'.format(url))
+        movie_log.error('Can\'t load {}'.format(webpage_data.url))
         return None
     return webpage_data
 
