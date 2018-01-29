@@ -8,7 +8,7 @@ from prettytable import PrettyTable
 
 
 logging.basicConfig(level=logging.ERROR, filename='cinemas.log')
-log = logging.getLogger()
+movie_log = logging.getLogger()
 
 
 def fetch_url(url, parameters=None, additional_headers=None):
@@ -24,7 +24,7 @@ def fetch_url(url, parameters=None, additional_headers=None):
         webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
-        log.error('Can\'t load {}'.format(url))
+        movie_log.error('Can\'t load {}'.format(url))
         return None
     return webpage_data
 
@@ -73,7 +73,7 @@ def process_afisha_page(response_object):
         soup = BeautifulSoup(response_object.content.decode('utf-8'), 'lxml')
         movies = soup.find('div', id='schedule').find_all('div', class_='object')
     except AttributeError:
-        log.error('Can\'t convert Afisha\'s page or find the table with movies. Maybe layout was changed.')
+        movie_log.error('Can\'t convert Afisha\'s page or find the table with movies. Maybe layout was changed.')
         return
     movies_info = []
     for movie in movies:
@@ -148,10 +148,10 @@ def process_suggest_kinopoisk(response_object):
     except AttributeError:
         return None
     except IndexError:
-        log.error('Suggest-kinopoisk has returned a new type of answer. {}'.format(info))
+        movie_log.error('Suggest-kinopoisk has returned a new type of answer. {}'.format(info))
         return None
     if not each_elem_has_keys(search_result, ('entityId',)):
-        log.error('Answer from suggest-kinopoisk doesn\'t contain entityId')
+        movie_log.error('Answer from suggest-kinopoisk doesn\'t contain entityId')
         return
     return extract_from_suggest_kp(search_result)
 
@@ -187,7 +187,7 @@ def search_movie_info(one_movie):
         movie_page = fetch_suggest_kinopoisk(movie_name=one_movie['rus_name'])
         movie_data = process_suggest_kinopoisk(movie_page)
     if not movie_data:
-        log.error('Totally failed to grab info about {}'.format(one_movie['rus_name']))
+        movie_log.error('Totally failed to grab info about {}'.format(one_movie['rus_name']))
         return []
     movie_rank_page = fetch_movie_ranks(movie_id=movie_data['id'])
     movie_ranks = process_movie_ranks(movie_rank_page)
