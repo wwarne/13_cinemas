@@ -1,9 +1,14 @@
 import requests
 import json
 import sys
+import logging
 from bs4 import BeautifulSoup
 from lxml import etree
 from prettytable import PrettyTable
+
+
+logging.basicConfig(level=logging.ERROR, filename='cinemas.log')
+log = logging.getLogger()
 
 
 def fetch_url(url, parameters=None, additional_headers=None):
@@ -19,6 +24,7 @@ def fetch_url(url, parameters=None, additional_headers=None):
         webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
+        log.error('Can\'t load {}'.format(url))
         return None
     return webpage_data
 
@@ -55,7 +61,6 @@ def fetch_movie_ranks(movie_id, ):
     return fetch_url('http://www.kinopoisk.ru/rating/{}.xml'.format(movie_id))
 
 
-# VALIDATING FUCTIONS
 def each_elem_has_keys(bunch_elements, keys_to_check):
     for element in bunch_elements:
         if not all(key in element for key in keys_to_check):
@@ -68,6 +73,7 @@ def process_afisha_page(response_object):
         soup = BeautifulSoup(response_object.content.decode('utf-8'), 'lxml')
         movies = soup.find('div', id='schedule').find_all('div', class_='object')
     except AttributeError:
+        log.error('Can\'t convert Afisha\'s page or find the table with movies. Maybe layout was changed.')
         return
     movies_info = []
     for movie in movies:
@@ -90,11 +96,9 @@ def process_kinopoisk_page(response_object):
     try:
         info = response_object.json(encoding='utf-8')
     except ValueError:
-        # TODO add logging here
-        return False
+        return None
     if not isinstance(info, list):
         return None
-    # Determine what have we got here. I've already faced two types of server answers.
     if each_elem_has_keys(info, ('dataType',)):
         return extract_from_kp_ver2(info)
     if each_elem_has_keys(info, ('id', 'name', 'year', 'rus')):
@@ -142,12 +146,12 @@ def process_suggest_kinopoisk(response_object):
         info = response_object.json(encoding='utf-8')
         search_result = list(map(json.loads, info[2]))
     except AttributeError:
-        # Битый json пришёл в ответ
-        return
+        return None
     except IndexError:
-        # Изменился формат ответа?
-        return
+        log.error('Suggest-kinopoisk has returned a new type of answer. {}'.format(info))
+        return None
     if not each_elem_has_keys(search_result, ('entityId',)):
+        log.error('Answer from suggest-kinopoisk doesn\'t contain entityId')
         return
     return extract_from_suggest_kp(search_result)
 
@@ -183,7 +187,7 @@ def search_movie_info(one_movie):
         movie_page = fetch_suggest_kinopoisk(movie_name=one_movie['rus_name'])
         movie_data = process_suggest_kinopoisk(movie_page)
     if not movie_data:
-        # We failed to get data from both kinopoisk websites.
+        log.error('Totally failed to grab info about {}'.format(one_movie['rus_name']))
         return []
     movie_rank_page = fetch_movie_ranks(movie_id=movie_data['id'])
     movie_ranks = process_movie_ranks(movie_rank_page)
