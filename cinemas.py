@@ -175,7 +175,7 @@ def process_movie_ranks(response_object):
 
 
 def print_movies(movies_data, num_to_print=10):
-    movies_data = list(filter(None, movies_data))
+    movies_data = [x for x in movies_data if x != []]
     if not movies_data:
         print('Nothing to print')
         return
