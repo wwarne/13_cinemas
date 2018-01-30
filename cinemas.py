@@ -1,11 +1,11 @@
-import requests
 import json
-import sys
 import logging
+import sys
+
+import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 from prettytable import PrettyTable
-
 
 logging.basicConfig(level=logging.ERROR, filename='cinemas.log')
 movie_log = logging.getLogger()
@@ -13,18 +13,22 @@ movie_log = logging.getLogger()
 
 def fetch_url(url, parameters=None, additional_headers=None):
     typical_headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/59.0.3071.115 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                      ' AppleWebKit/537.36 (KHTML, like Gecko)'
+                      ' Chrome/59.0.3071.115 Safari/537.36',
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4'
     }
     if additional_headers:
         typical_headers.update(additional_headers)
     try:
-        webpage_data = requests.get(url, params=parameters, headers=typical_headers, timeout=20)
+        webpage_data = requests.get(url,
+                                    params=parameters,
+                                    headers=typical_headers,
+                                    timeout=20)
         webpage_data.raise_for_status()
     except requests.exceptions.RequestException:
-        movie_log.error('Can\'t load {}Parameters are: {}'.format(url, parameters))
+        movie_log.error('Can\'t load {}Params are: {}'.format(url, parameters))
         return None
     return webpage_data
 
@@ -71,9 +75,11 @@ def each_elem_has_keys(bunch_elements, keys_to_check):
 def process_afisha_page(response_object):
     try:
         soup = BeautifulSoup(response_object.content.decode('utf-8'), 'lxml')
-        movies = soup.find('div', id='schedule').find_all('div', class_='object')
+        movies = soup.find('div', id='schedule').find_all('div',
+                                                          class_='object')
     except AttributeError:
-        movie_log.error('Can\'t convert Afisha\'s page or find the table with movies. Maybe layout was changed.')
+        movie_log.error('Can\'t convert Afisha\'s page or find the table with '
+                        'movies. Maybe layout was changed.')
         return
     movies_info = []
     for movie in movies:
@@ -106,8 +112,12 @@ def process_kinopoisk_page(response_object):
 
 
 def extract_from_kp_ver1(films_data):
-    only_films = [film for film in films_data if film.get('is_serial') != 'serial' and film.get('ur_rating')]
-    sorted_films = sorted(only_films, key=lambda elem: int(elem.get('year', 0)), reverse=True)
+    only_films = [film for film in films_data
+                  if film.get('is_serial') != 'serial'
+                  and film.get('ur_rating')]
+    sorted_films = sorted(only_films,
+                          key=lambda elem: int(elem.get('year', 0)),
+                          reverse=True)
     return {
         'id': sorted_films[0]['id'],
         'kp_rank': sorted_films[0]['ur_rating'],
@@ -117,8 +127,11 @@ def extract_from_kp_ver1(films_data):
 
 
 def extract_from_kp_ver2(films_data):
-    only_films = [film for film in films_data if films_data['dataType'] == 'film']
-    sorted_films = sorted(only_films, key=lambda elem: int(elem['year']), reverse=True)
+    only_films = [film for film in films_data
+                  if films_data['dataType'] == 'film']
+    sorted_films = sorted(only_films,
+                          key=lambda elem: int(elem['year']),
+                          reverse=True)
     return {
         'id': sorted_films[0]['id'],
         'kp_rank': sorted_films[0]['rating']['value'],
@@ -128,8 +141,10 @@ def extract_from_kp_ver2(films_data):
 
 
 def extract_from_suggest_kp(films_data):
-    only_fimls = [film for film in films_data if film.get('type') == 'MOVIE']
-    sorted_films = sorted(only_fimls, key=lambda elem: max(elem.get('years', [0])), reverse=True)
+    only_films = [film for film in films_data if film.get('type') == 'MOVIE']
+    sorted_films = sorted(only_films,
+                          key=lambda elem: max(elem.get('years', [0])),
+                          reverse=True)
     result = {
         'id': sorted_films[0]['entityId'],
         'original_name': sorted_films[0]['originalTitle'],
@@ -150,10 +165,12 @@ def process_suggest_kinopoisk(response_object):
     except AttributeError:
         return None
     except IndexError:
-        movie_log.error('Suggest-kinopoisk has returned a new type of answer. {}'.format(info))
+        movie_log.error('Suggest-kinopoisk has returned a new type'
+                        ' of answer. {}'.format(info))
         return None
     if not each_elem_has_keys(search_result, ('entityId',)):
-        movie_log.error('Answer from suggest-kinopoisk doesn\'t contain entityId')
+        movie_log.error('Answer from suggest-kinopoisk'
+                        ' doesn\'t contain entityId')
         return
     return extract_from_suggest_kp(search_result)
 
@@ -182,9 +199,13 @@ def print_movies(movies_data, num_to_print=10):
     x = PrettyTable()
     x.field_names = ['Rank', 'Name', 'Cinemas']
     x.align['Name'] = 'l'
-    result = sorted(movies_data, key=lambda elem: float(elem['kp_rank']), reverse=True)[:num_to_print]
+    result = sorted(movies_data,
+                    key=lambda elem: float(elem['kp_rank']),
+                    reverse=True)[:num_to_print]
     for movie in result:
-        x.add_row([movie['kp_rank'], movie['rus_name'] + ' (' + movie['original_name'] + ') ', movie['cinemas_num']])
+        x.add_row([movie['kp_rank'],
+                   movie['rus_name'] + ' (' + movie['original_name'] + ') ',
+                   movie['cinemas_num']])
     print(x)
 
 
@@ -195,7 +216,8 @@ def search_movie_info(one_movie):
         movie_page = fetch_suggest_kinopoisk(movie_name=one_movie['rus_name'])
         movie_data = process_suggest_kinopoisk(movie_page)
     if not movie_data:
-        movie_log.error('Totally failed to grab info about {}'.format(one_movie['rus_name']))
+        movie_log.error('Totally failed to grab info'
+                        ' about {}'.format(one_movie['rus_name']))
         return []
     movie_rank_page = fetch_movie_ranks(movie_id=movie_data['id'])
     movie_ranks = process_movie_ranks(movie_rank_page)
@@ -206,9 +228,15 @@ def search_movie_info(one_movie):
 
 if __name__ == '__main__':
     print('Fetching a webpage from Afisha.ru')
-    afisha_page = fetch_afisha_page() or sys.exit('Website Afisha.ru not found')
-    movies_from_afisha = process_afisha_page(afisha_page) or sys.exit('Probably Afisha\'s layout has been changed.')
-    interesting_movies = sorted(movies_from_afisha, key=lambda elem: elem['cinemas_num'], reverse=True)[:20]
+    afisha_page = fetch_afisha_page()
+    if not afisha_page:
+        sys.exit('Website Afisha.ru not found')
+    movies_from_afisha = process_afisha_page(afisha_page)
+    if not movies_from_afisha:
+        sys.exit('Probably Afisha\'s layout has been changed.')
+    interesting_movies = sorted(movies_from_afisha,
+                                key=lambda elem: elem['cinemas_num'],
+                                reverse=True)[:20]
     print('Grabbing information about every movie.')
-    movies_information = [search_movie_info(movie) for movie in interesting_movies]
-    print_movies(movies_information)
+    movies_info = [search_movie_info(movie) for movie in interesting_movies]
+    print_movies(movies_info)
