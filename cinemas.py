@@ -100,15 +100,15 @@ def process_afisha_page(response_object):
 
 def process_kinopoisk_page(response_object):
     try:
-        info = response_object.json(encoding='utf-8')
+        kp_answer = response_object.json(encoding='utf-8')
     except (ValueError, AttributeError):
         return None
-    if not isinstance(info, list):
+    if not isinstance(kp_answer, list):
         return None
-    if each_elem_has_keys(info, ('dataType',)):
-        return extract_from_kp_ver2(info)
-    if each_elem_has_keys(info, ('id', 'name', 'year', 'rus')):
-        return extract_from_kp_ver1(info)
+    if each_elem_has_keys(kp_answer, ('dataType',)):
+        return extract_from_kp_ver2(kp_answer)
+    if each_elem_has_keys(kp_answer, ('id', 'name', 'year', 'rus')):
+        return extract_from_kp_ver1(kp_answer)
 
 
 def extract_from_kp_ver1(films_data):
@@ -160,13 +160,13 @@ def process_suggest_kinopoisk(response_object):
     if not response_object:
         return
     try:
-        info = response_object.json(encoding='utf-8')
-        search_result = list(map(json.loads, info[2]))
+        kp_suggest_answer = response_object.json(encoding='utf-8')
+        search_result = list(map(json.loads, kp_suggest_answer[2]))
     except AttributeError:
         return None
     except IndexError:
         movie_log.error('Suggest-kinopoisk has returned a new type'
-                        ' of answer. {}'.format(info))
+                        ' of answer. {}'.format(kp_suggest_answer))
         return None
     if not each_elem_has_keys(search_result, ('entityId',)):
         movie_log.error('Answer from suggest-kinopoisk'
@@ -181,14 +181,14 @@ def process_movie_ranks(response_object):
     ranks_data = etree.fromstring(response_object.content)
     kp_rating = ranks_data.find('kp_rating')
     imdb_rating = ranks_data.find('imdb_rating')
-    result = {}
+    movie_ranks = {}
     if kp_rating is not None:
-        result['kp_rank'] = float(kp_rating.text)
-        result['kp_votes'] = int(kp_rating.get('num_vote'))
+        movie_ranks['kp_rank'] = float(kp_rating.text)
+        movie_ranks['kp_votes'] = int(kp_rating.get('num_vote'))
     if imdb_rating is not None:
-        result['imdb_rank'] = float(imdb_rating.text)
-        result['imdb_votes'] = int(imdb_rating.get('num_vote'))
-    return result
+        movie_ranks['imdb_rank'] = float(imdb_rating.text)
+        movie_ranks['imdb_votes'] = int(imdb_rating.get('num_vote'))
+    return movie_ranks
 
 
 def print_movies(movies_data, num_to_print=10):
@@ -238,5 +238,5 @@ if __name__ == '__main__':
                                 key=lambda elem: elem['cinemas_num'],
                                 reverse=True)[:20]
     print('Grabbing information about every movie.')
-    movies_info = [search_movie_info(movie) for movie in interesting_movies]
-    print_movies(movies_info)
+    movies_total = [search_movie_info(movie) for movie in interesting_movies]
+    print_movies(movies_total)
