@@ -145,15 +145,15 @@ def extract_from_suggest_kp(films_data):
     sorted_films = sorted(only_films,
                           key=lambda elem: max(elem.get('years', [0])),
                           reverse=True)
-    result = {
+    movie_information = {
         'id': sorted_films[0]['entityId'],
         'original_name': sorted_films[0]['originalTitle'],
         'rus_name': sorted_films[0]['title']
     }
     if sorted_films[0].get('rating'):
-        result['kp_rank'] = sorted_films[0]['rating']['rate']
-        result['kp_votes'] = sorted_films[0]['rating']['votes']
-    return result
+        movie_information['kp_rank'] = sorted_films[0]['rating']['rate']
+        movie_information['kp_votes'] = sorted_films[0]['rating']['votes']
+    return movie_information
 
 
 def process_suggest_kinopoisk(response_object):
@@ -199,10 +199,10 @@ def print_movies(movies_data, num_to_print=10):
     x = PrettyTable()
     x.field_names = ['Rank', 'Name', 'Cinemas']
     x.align['Name'] = 'l'
-    result = sorted(movies_data,
-                    key=lambda elem: float(elem['kp_rank']),
-                    reverse=True)[:num_to_print]
-    for movie in result:
+    movies_to_print = sorted(movies_data,
+                             key=lambda elem: float(elem['kp_rank']),
+                             reverse=True)[:num_to_print]
+    for movie in movies_to_print:
         x.add_row([movie['kp_rank'],
                    movie['rus_name'] + ' (' + movie['original_name'] + ') ',
                    movie['cinemas_num']])
